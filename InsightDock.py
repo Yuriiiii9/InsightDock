@@ -102,7 +102,7 @@ if 'df' not in st.session_state:
 def load_data_from_github():
     """Load sample sales data from GitHub repository"""
     # Replace with your actual GitHub raw file URL
-    github_url = "https://github.com/Yuriiiii9/InsightDock/blob/main/sample_data.csv"
+    github_url = "https://raw.githubusercontent.com/Yuriiiii9/InsightDock/main/sample_data.csv"
     
     try:
         response = requests.get(github_url)
