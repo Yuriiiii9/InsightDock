@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -270,8 +271,7 @@ st.markdown('<div class="ai-section">', unsafe_allow_html=True)
 st.header("🤖 AI Sales Intelligence Assistant")
 
 if groq_available:
-    groq_api_key = st.text_input("🔑 Enter your GROQ API Key:", type="password", 
-                                help="Get your free API key from https://console.groq.com/")
+    groq_api_key = os.environ.get("GROQ_API_KEY", "")
     
     if groq_api_key:
         st.success("✅ AI Assistant is ready!")
@@ -417,8 +417,8 @@ Begin your analysis:"""
                     st.error(f"AI Error: {str(e)}")
                     st.rerun()
     else:
-        st.info("🔑 Please enter your GROQ API key to start using the AI assistant.")
-        st.markdown("**Get your free API key at:** https://console.groq.com/")
+        st.warning("🔑 GROQ_API_KEY not found in environment variables.")
+        st.info("Please set your GROQ_API_KEY in the deployment settings.")
 
 else:
     st.warning("📦 GROQ library not available.")
