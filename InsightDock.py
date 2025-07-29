@@ -435,7 +435,7 @@ Begin your analysis:"""
                                     "content": prompt
                                 }
                             ],
-                            model=llama3-8b-8192",
+                            model="llama3-8b-8192",
                             temperature=0.1,
                             max_tokens=2000
                         )
