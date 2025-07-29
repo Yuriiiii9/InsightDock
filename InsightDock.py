@@ -439,8 +439,9 @@ Begin your analysis:"""
                             temperature=0.1,
                             max_tokens=2000
                         )
-                        
-                        response_text = chat_completion.choices[0].message.content
+
+                try:
+                    response_text = chat_completion.choices[0].message.content
                     
                     # Add AI response
                     st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
