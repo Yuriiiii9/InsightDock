@@ -326,7 +326,7 @@ if groq_available:
             st.session_state.chat_messages = []
             st.rerun()
         
-        #if (send_button and user_input) or any([message for message in st.session_state.chat_messages if message["role"] == "user" and message["content"] not in [msg["content"] for msg in st.session_state.chat_messages[:-1] if msg["role"] == "user"]]):
+        if (send_button and user_input) or any([message for message in st.session_state.chat_messages if message["role"] == "user" and message["content"] not in [msg["content"] for msg in st.session_state.chat_messages[:-1] if msg["role"] == "user"]]):
             
             # Get the latest user message
             if send_button and user_input:
@@ -450,6 +450,11 @@ Begin your analysis:"""
                         error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
                         st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
                         st.error(f"AI Assistant Error: {str(e)}")
+                        st.error(f"❌ Exception caught: {str(e)}")
+                        st.session_state.chat_messages.append({
+                            "role": "assistant",
+                            "content": f"❌ Error: {str(e)}"
+                        })
                         st.rerun()
     else:
         st.warning("🔑 GROQ_API_KEY not found in environment variables.")
