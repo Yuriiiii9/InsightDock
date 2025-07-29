@@ -477,7 +477,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #666; padding: 20px;">
-    🍺 <strong>Nonny Beer AI Analytics Dashboard</strong> | 
+    🍺 <strong>Beer AI Analytics Dashboard</strong> | 
     Built with Streamlit & GROQ AI | 
     <em>Showcasing AI Product Management Excellence</em>
 </div>
