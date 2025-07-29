@@ -326,65 +326,116 @@ if groq_available:
             st.session_state.chat_messages = []
             st.rerun()
         
-        if (send_button and user_input) or any([message for message in st.session_state.chat_messages if message["role"] == "user" and message["content"] not in [msg["content"] for msg in st.session_state.chat_messages[:-1] if msg["role"] == "user"]]):
+        if send_button and user_input:
+            # Add user message
+            st.session_state.chat_messages.append({"role": "user", "content": user_input})
             
-            # Get the latest user message
-            try:
-                st.info("🔄 Using LangChain with Python code execution...")
-                
-                llm = ChatGroq(
-                    groq_api_key=groq_api_key, 
-                    model="llama3-8b-8192", 
-                    temperature=0.1,
-                    max_tokens=2000
-                )
-                
-                # 更详细的提示
-                enhanced_question = f"""
-Please analyze the brewery sales data to answer: {user_input}
-
-Steps:
-1. First examine the data structure 
-2. Perform calculations using pandas
-3. Provide specific insights with numbers
-4. Give actionable recommendations
-
-Make sure to show your analysis process and provide a clear final answer.
-"""
-        
-                agent = create_pandas_dataframe_agent(
-                    llm, 
-                    df, 
-                    allow_dangerous_code=True,
-                    verbose=True,
-                    handle_parsing_errors=True,
-                    max_iterations=3  # 限制迭代避免无限循环
-                )
-                
-                st.write("🤖 Agent is thinking and coding...")
-                result = agent.invoke({"input": enhanced_question})  # 使用invoke而不是run
-                
-                # 处理不同的返回格式
-                if isinstance(result, dict):
-                    response_text = result.get('output', str(result))
-                else:
-                    response_text = str(result)
-                    
-                st.write(f"📝 Raw result: {response_text[:500]}...")  # 显示原始结果
-                
-                if response_text and response_text.strip():
-                    st.success("✅ LangChain analysis completed!")
-                else:
-                    st.warning("Empty result from LangChain")
-                    response_text = None
-                
-            except Exception as e:
-                st.error(f"LangChain failed: {e}")
+            # Generate response
+            with st.spinner("🤔 AI is analyzing data and running calculations..."):
                 response_text = None
-                                
-            else:
-                st.warning("🔑 GROQ_API_KEY not found in environment variables.")
-                st.info("Please set your GROQ_API_KEY in the deployment settings.")
+                
+                # 尝试LangChain
+                if langchain_available:
+                    try:
+                        st.info("🔄 Using LangChain agent with code execution...")
+                        
+                        llm = ChatGroq(
+                            groq_api_key=groq_api_key,
+                            model="llama3-8b-8192",
+                            temperature=0.1,
+                            max_tokens=2000
+                        )
+                        
+                        agent = create_pandas_dataframe_agent(
+                            llm,
+                            df,
+                            verbose=False,
+                            handle_parsing_errors=True,
+                            allow_dangerous_code=True,
+                            max_iterations=3
+                        )
+                        
+                        result = agent.run(user_input)
+                        
+                        if result and str(result).strip():
+                            response_text = str(result)
+                            st.success("✅ LangChain analysis completed!")
+                        else:
+                            st.warning("LangChain returned empty result, using fallback...")
+                            response_text = None
+                        
+                    except Exception as e:
+                        st.warning(f"LangChain failed: {str(e)[:100]}... Using fallback...")
+                        response_text = None
+                
+                # Fallback到标准GROQ
+                if response_text is None:
+                    try:
+                        st.info("🔄 Using standard GROQ analysis...")
+                        
+                        client = Groq(api_key=groq_api_key)
+                        
+                        business_context = f"""
+BREWERY SALES DATA SUMMARY:
+- Total Sales: ${df['Sales'].sum():,.2f}
+- Total Orders: {len(df):,}
+- Active Accounts: {df['Account Name'].nunique()}
+- Total Bottles Sold: {df['Total Bottles'].sum():,.0f}
+
+TOP PRODUCTS BY SALES:
+{df.groupby('Product Line')['Sales'].sum().sort_values(ascending=False).head().to_string()}
+
+SALES CHANNELS:
+{df.groupby('Sales Channel Name')['Sales'].sum().sort_values(ascending=False).to_string()}
+
+GEOGRAPHIC BREAKDOWN:
+{df.groupby('Province')['Sales'].sum().sort_values(ascending=False).to_string()}
+"""
+                        
+                        prompt = f"""You are a senior business analyst for a craft brewery. 
+
+{business_context}
+
+QUESTION: {user_input}
+
+Please provide a detailed analysis with:
+1. Key insights from the data
+2. Specific numbers and percentages
+3. Actionable business recommendations
+4. Growth opportunities
+
+Be specific and data-driven in your response."""
+                        
+                        chat_completion = client.chat.completions.create(
+                            messages=[
+                                {
+                                    "role": "system",
+                                    "content": "You are an expert brewery business analyst. Provide specific, data-driven insights and actionable recommendations."
+                                },
+                                {
+                                    "role": "user", 
+                                    "content": prompt
+                                }
+                            ],
+                            model="llama3-8b-8192",
+                            temperature=0.1,
+                            max_tokens=2000
+                        )
+                        
+                        response_text = chat_completion.choices[0].message.content
+                        st.success("✅ Standard analysis completed!")
+                        
+                    except Exception as e:
+                        response_text = f"❌ Sorry, I encountered an error: {str(e)}"
+                        st.error(f"Analysis failed: {str(e)}")
+                
+                # 最终添加响应
+                if response_text:
+                    st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
+                else:
+                    st.session_state.chat_messages.append({"role": "assistant", "content": "❌ Sorry, I couldn't generate a response. Please try again."})
+                
+                st.rerun()
 
 else:
     st.warning("📦 GROQ library not available.")
