@@ -326,26 +326,26 @@ if groq_available:
             st.session_state.chat_messages = []
             st.rerun()
         
-        if (send_button and user_input) or any([message for message in st.session_state.chat_messages if message["role"] == "user" and message["content"] not in [msg["content"] for msg in st.session_state.chat_messages[:-1] if msg["role"] == "user"]]):
+        #if (send_button and user_input) or any([message for message in st.session_state.chat_messages if message["role"] == "user" and message["content"] not in [msg["content"] for msg in st.session_state.chat_messages[:-1] if msg["role"] == "user"]]):
             
-            # Get the latest user message
-           if send_button and user_input:
-                # Add user message
-                st.session_state.chat_messages.append({"role": "user", "content": user_input})
-                
-                # Generate response with code execution capability
-                with st.spinner("🤔 AI is analyzing data and running calculations..."):
-                    try:
-                        if langchain_available:
-                            # 创建增强的LangChain agent
-                            llm = ChatGroq(
-                                groq_api_key=groq_api_key,
-                                model="llama-3.1-70b-versatile",
-                                temperature=0.1
-                            )
-                            
-                            # 创建带有详细指导的agent
-                            enhanced_prompt = f"""
+        # Get the latest user message
+       if send_button and user_input:
+            # Add user message
+            st.session_state.chat_messages.append({"role": "user", "content": user_input})
+            
+            # Generate response with code execution capability
+            with st.spinner("🤔 AI is analyzing data and running calculations..."):
+                try:
+                    if langchain_available:
+                        # 创建增强的LangChain agent
+                        llm = ChatGroq(
+                            groq_api_key=groq_api_key,
+                            model="llama-3.1-70b-versatile",
+                            temperature=0.1
+                        )
+                        
+                        # 创建带有详细指导的agent
+                        enhanced_prompt = f"""
 You are an expert business analyst for Beer brewery with advanced data analysis capabilities.
 
 ANALYSIS FRAMEWORK:
@@ -369,24 +369,24 @@ USER QUESTION: {user_input}
 Begin your analysis by examining the data and performing necessary calculations:
 """
                             
-                            agent = create_pandas_dataframe_agent(
-                                llm,
-                                df,
-                                verbose=False,
-                                handle_parsing_errors=True,
-                                allow_dangerous_code=True,
-                                prefix=enhanced_prompt
-                            )
-                            
-                            # 使用agent执行分析
-                            result = agent.run(user_input)
-                            response_text = result
-                            
-                        else:
-                            # 降级为普通GROQ调用
-                            client = Groq(api_key=groq_api_key)
-                            
-                            business_context = f"""
+                        agent = create_pandas_dataframe_agent(
+                            llm,
+                            df,
+                            verbose=False,
+                            handle_parsing_errors=True,
+                            allow_dangerous_code=True,
+                            prefix=enhanced_prompt
+                        )
+                        
+                        # 使用agent执行分析
+                        result = agent.run(user_input)
+                        response_text = result
+                        
+                    else:
+                        # 降级为普通GROQ调用
+                        client = Groq(api_key=groq_api_key)
+                        
+                        business_context = f"""
 BEER - SALES DATA ANALYSIS:
 - Total Sales: ${df['Sales'].sum():,.2f}
 - Total Orders: {len(df):,}
@@ -400,7 +400,7 @@ BEER - SALES DATA ANALYSIS:
 {df.groupby('Sales Channel Name')['Sales'].sum().sort_values(ascending=False).to_string()}
 """
                             
-                            prompt = f"""You are an advanced AI business analyst for Beer brewery.
+                        prompt = f"""You are an advanced AI business analyst for Beer brewery.
 
 {business_context}
 
@@ -424,33 +424,33 @@ INSTRUCTIONS:
 
 Begin your analysis:"""
                         
-                        chat_completion = client.chat.completions.create(
-                            messages=[
-                                {
-                                    "role": "system",
-                                    "content": "You are an expert business analyst with deep expertise in craft brewery operations, sales optimization, and data analysis. Think step-by-step and show your analytical process."
-                                },
-                                {
-                                    "role": "user", 
-                                    "content": prompt
-                                }
-                            ],
-                            model="llama-3.1-70b-versatile",
-                            temperature=0.1,
-                            max_tokens=2000
-                        )
+                    chat_completion = client.chat.completions.create(
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": "You are an expert business analyst with deep expertise in craft brewery operations, sales optimization, and data analysis. Think step-by-step and show your analytical process."
+                            },
+                            {
+                                "role": "user", 
+                                "content": prompt
+                            }
+                        ],
+                        model="llama-3.1-70b-versatile",
+                        temperature=0.1,
+                        max_tokens=2000
+                    )
 
-                        response_text = chat_completion.choices[0].message.content
-                        
-                        # Add AI response
-                        st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
-                        st.rerun()
-                        
-                    except Exception as e:
-                        error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
-                        st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
-                        st.error(f"AI Assistant Error: {str(e)}")
-                        st.rerun()
+                    response_text = chat_completion.choices[0].message.content
+                    
+                    # Add AI response
+                    st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
+                    st.rerun()
+                    
+                except Exception as e:
+                    error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
+                    st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
+                    st.error(f"AI Assistant Error: {str(e)}")
+                    st.rerun()
     else:
         st.warning("🔑 GROQ_API_KEY not found in environment variables.")
         st.info("Please set your GROQ_API_KEY in the deployment settings.")
