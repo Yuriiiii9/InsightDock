@@ -337,35 +337,64 @@ if groq_available:
                 # 尝试LangChain
                 if langchain_available:
                     try:
-                        st.info("🔄 Using LangChain agent with code execution...")
+                        st.info("🔄 Using LangChain agent with Python code execution...")
                         
                         llm = ChatGroq(
                             groq_api_key=groq_api_key,
                             model="llama3-8b-8192",
-                            temperature=0.1,
-                            max_tokens=2000
+                            temperature=0,
+                            max_tokens=4000,
+                            request_timeout=300
                         )
                         
+                        system_message = """You are an expert data scientist with advanced Python and pandas skills. 
+
+When analyzing data:
+1. Always start by examining the data structure (df.info(), df.head())
+2. Perform comprehensive calculations using pandas
+3. Create meaningful insights with statistical analysis
+4. Show your work step by step
+5. Provide business recommendations based on data
+
+You have full access to pandas, numpy, and can execute any Python code needed for analysis.
+Be thorough and analytical in your approach."""
+        
                         agent = create_pandas_dataframe_agent(
                             llm,
                             df,
-                            verbose=False,
+                            verbose=True,
                             handle_parsing_errors=True,
                             allow_dangerous_code=True,
-                            max_iterations=3
+                            max_iterations=15,
+                            early_stopping_method=None,
+                            agent_type="openai-tools",
+                            system_message=system_message
                         )
                         
-                        result = agent.run(user_input)
+                        enhanced_question = f"""
+{user_input}
+
+Please provide a comprehensive analysis including:
+- Data exploration and key statistics
+- Relevant calculations and metrics
+- Trends and patterns identification
+- Business insights and recommendations
+- Specific numbers and percentages to support your analysis
+
+Use Python/pandas code to analyze the data thoroughly.
+"""
+        
+                        result = agent.run(enhanced_question)
                         
-                        if result and str(result).strip():
+                        if result and str(result).strip() and len(str(result)) > 50:
                             response_text = str(result)
-                            st.success("✅ LangChain analysis completed!")
+                            st.success("✅ LangChain Python analysis completed!")
                         else:
-                            st.warning("LangChain returned empty result, using fallback...")
+                            st.warning("LangChain analysis incomplete, using fallback...")
                             response_text = None
                         
                     except Exception as e:
-                        st.warning(f"LangChain failed: {str(e)[:100]}... Using fallback...")
+                        st.warning(f"LangChain failed: {str(e)[:200]}... Using fallback...")
                         response_text = None
                 
                 # Fallback到标准GROQ
