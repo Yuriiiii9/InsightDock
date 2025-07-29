@@ -366,7 +366,7 @@ Be thorough and analytical in your approach."""
                             handle_parsing_errors=True,
                             allow_dangerous_code=True,
                             max_iterations=15,
-                            early_stopping_method=None,
+                            early_stopping_method="generate",
                             agent_type="openai-tools",
                             system_message=system_message
                         )
