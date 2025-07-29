@@ -501,7 +501,7 @@ Begin your analysis:"""
                                 "content": f"❌ Error: {str(e)}"
                             })
                             st.rerun()
-                            return  # 退出，不继续执行
+                            st.stop()
         
                             
                     # Add AI response
