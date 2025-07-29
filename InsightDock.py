@@ -330,17 +330,17 @@ if groq_available:
             
             # Get the latest user message
             try:
-        st.info("🔄 Using LangChain with Python code execution...")
-        
-        llm = ChatGroq(
-            groq_api_key=groq_api_key, 
-            model="llama3-8b-8192", 
-            temperature=0.1,
-            max_tokens=2000
-        )
-        
-        # 更详细的提示
-        enhanced_question = f"""
+                st.info("🔄 Using LangChain with Python code execution...")
+                
+                llm = ChatGroq(
+                    groq_api_key=groq_api_key, 
+                    model="llama3-8b-8192", 
+                    temperature=0.1,
+                    max_tokens=2000
+                )
+                
+                # 更详细的提示
+                enhanced_question = f"""
 Please analyze the brewery sales data to answer: {user_input}
 
 Steps:
@@ -352,39 +352,39 @@ Steps:
 Make sure to show your analysis process and provide a clear final answer.
 """
         
-        agent = create_pandas_dataframe_agent(
-            llm, 
-            df, 
-            allow_dangerous_code=True,
-            verbose=True,
-            handle_parsing_errors=True,
-            max_iterations=3  # 限制迭代避免无限循环
-        )
-        
-        st.write("🤖 Agent is thinking and coding...")
-        result = agent.invoke({"input": enhanced_question})  # 使用invoke而不是run
-        
-        # 处理不同的返回格式
-        if isinstance(result, dict):
-            response_text = result.get('output', str(result))
-        else:
-            response_text = str(result)
-            
-        st.write(f"📝 Raw result: {response_text[:500]}...")  # 显示原始结果
-        
-        if response_text and response_text.strip():
-            st.success("✅ LangChain analysis completed!")
-        else:
-            st.warning("Empty result from LangChain")
-            response_text = None
-        
-    except Exception as e:
-        st.error(f"LangChain failed: {e}")
-        response_text = None
-                        
-    else:
-        st.warning("🔑 GROQ_API_KEY not found in environment variables.")
-        st.info("Please set your GROQ_API_KEY in the deployment settings.")
+                agent = create_pandas_dataframe_agent(
+                    llm, 
+                    df, 
+                    allow_dangerous_code=True,
+                    verbose=True,
+                    handle_parsing_errors=True,
+                    max_iterations=3  # 限制迭代避免无限循环
+                )
+                
+                st.write("🤖 Agent is thinking and coding...")
+                result = agent.invoke({"input": enhanced_question})  # 使用invoke而不是run
+                
+                # 处理不同的返回格式
+                if isinstance(result, dict):
+                    response_text = result.get('output', str(result))
+                else:
+                    response_text = str(result)
+                    
+                st.write(f"📝 Raw result: {response_text[:500]}...")  # 显示原始结果
+                
+                if response_text and response_text.strip():
+                    st.success("✅ LangChain analysis completed!")
+                else:
+                    st.warning("Empty result from LangChain")
+                    response_text = None
+                
+            except Exception as e:
+                st.error(f"LangChain failed: {e}")
+                response_text = None
+                                
+            else:
+                st.warning("🔑 GROQ_API_KEY not found in environment variables.")
+                st.info("Please set your GROQ_API_KEY in the deployment settings.")
 
 else:
     st.warning("📦 GROQ library not available.")
