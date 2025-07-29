@@ -488,7 +488,7 @@ Begin your analysis:"""
                                     "content": f"❌ Error: {str(e)}"
                                 })
                                 st.rerun()
-                                return
+                                st.stop()
 
                         except Exception as e:
                             # 保留你的详细错误处理
