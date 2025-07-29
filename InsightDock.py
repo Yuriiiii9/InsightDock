@@ -337,15 +337,29 @@ if groq_available:
                 with st.spinner("🤔 AI is analyzing data and running calculations..."):
                     try:
                         if langchain_available:
-                            # 创建增强的LangChain agent
-                            llm = ChatGroq(
-                                groq_api_key=groq_api_key,
-                                model="llama3-8b-8192",
-                                temperature=0.1
-                            )
+                            # 尝试使用LangChain agent，带超时
+                            import signal
+                            import time
                             
-                            # 创建带有详细指导的agent
-                            enhanced_prompt = f"""
+                            def timeout_handler(signum, frame):
+                                raise TimeoutError("LangChain agent timed out")
+                            
+                            # 设置90秒超时
+                            signal.signal(signal.SIGALRM, timeout_handler)
+                            signal.alarm(90)  # 90秒超时
+                            
+                            try:
+                                st.write("🔄 Using LangChain agent with code execution...")
+                                
+                                # 创建增强的LangChain agent
+                                llm = ChatGroq(
+                                    groq_api_key=groq_api_key,
+                                    model="llama3-8b-8192",
+                                    temperature=0.1
+                                )
+                                
+                                # 创建带有详细指导的agent
+                                enhanced_prompt = f"""
 You are an expert business analyst for Beer brewery with advanced data analysis capabilities.
 
 ANALYSIS FRAMEWORK:
@@ -369,21 +383,43 @@ USER QUESTION: {user_input}
 Begin your analysis by examining the data and performing necessary calculations:
 """
                             
-                            agent = create_pandas_dataframe_agent(
-                                llm,
-                                df,
-                                verbose=False,
-                                handle_parsing_errors=True,
-                                allow_dangerous_code=True,
-                                prefix=enhanced_prompt
-                            )
+                                agent = create_pandas_dataframe_agent(
+                                    llm,
+                                    df,
+                                    verbose=False,
+                                    handle_parsing_errors=True,
+                                    allow_dangerous_code=True,
+                                    prefix=enhanced_prompt
+                                )
+                                
+                                # 使用agent执行分析
+                                result = agent.run(user_input)
+                                response_text = result
                             
-                            # 使用agent执行分析
-                            result = agent.run(user_input)
-                            response_text = result
-                            
+                                # 取消超时
+                                signal.alarm(0)
+                                st.success("✅ LangChain analysis completed!")
+                                
+                            except TimeoutError:
+                                # 超时后降级到普通GROQ
+                                signal.alarm(0)  # 清除超时
+                                st.warning("⏰ LangChain agent timed out (90s), falling back to standard GROQ analysis...")
+                                raise Exception("LangChain timeout - falling back")
+                                
+                            except Exception as e:
+                                # 其他错误也降级
+                                signal.alarm(0)  # 清除超时
+                                if "timeout" not in str(e).lower():
+                                    st.warning(f"⚠️ LangChain error: {str(e)[:100]}... Falling back to standard analysis...")
+                                raise Exception("LangChain failed - falling back")
                         else:
-                            # 降级为普通GROQ调用
+                            raise Exception("LangChain not available - using fallback")
+                            
+                    except Exception as fallback_trigger:
+                        # 降级到普通GROQ调用
+                        try:
+                            st.info("🔄 Using standard GROQ analysis...")
+                            
                             client = Groq(api_key=groq_api_key)
                             
                             business_context = f"""
@@ -441,12 +477,8 @@ Begin your analysis:"""
                         )
     
                         response_text = chat_completion.choices[0].message.content
-                        
-                        # Add AI response
-                        st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
-                        st.rerun()
-                        
-                    except Exception as e:
+                        st.success("✅ Standard GROQ analysis completed!")
+                    except Exception as final_error:
                         error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
                         st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
                         st.error(f"AI Assistant Error: {str(e)}")
@@ -456,6 +488,33 @@ Begin your analysis:"""
                             "content": f"❌ Error: {str(e)}"
                         })
                         st.rerun()
+                        return
+
+                    except Exception as e:
+                        # 保留你的详细错误处理
+                        error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
+                        st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
+                        st.error(f"AI Assistant Error: {str(e)}")
+                        st.error(f"❌ Exception caught: {str(e)}")
+                        st.session_state.chat_messages.append({
+                            "role": "assistant",
+                            "content": f"❌ Error: {str(e)}"
+                        })
+                        st.rerun()
+                        return  # 退出，不继续执行
+        
+                            
+                    # Add AI response
+                if response_text:
+                    st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
+                    st.rerun()
+                else:
+                    # 如果没有响应文本，显示错误
+                    error_message = "❌ No response generated. Please try again."
+                    st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
+                    st.error("No response generated")
+                    st.rerun()
+                        
     else:
         st.warning("🔑 GROQ_API_KEY not found in environment variables.")
         st.info("Please set your GROQ_API_KEY in the deployment settings.")
