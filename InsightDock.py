@@ -455,19 +455,19 @@ Begin your analysis:"""
                             st.error(f"AI Assistant Error: {str(e)}")
                             st.rerun()
                 
-                else:
-                    st.warning("🔑 GROQ_API_KEY not found in environment variables.")
-                    st.info("Please set your GROQ_API_KEY in the deployment settings.")
-                
-                # Footer
-                st.markdown('</div>', unsafe_allow_html=True)
-                
-                # Footer
-                st.markdown("---")
-                st.markdown("""
-                <div style="text-align: center; color: #666; padding: 20px;">
-                    🍺 <strong>Nonny Beer AI Analytics Dashboard</strong> | 
-                    Built with Streamlit & GROQ AI | 
-                    <em>Showcasing AI Product Management Excellence</em>
-                </div>
-                """, unsafe_allow_html=True)
+else:
+    st.warning("🔑 GROQ_API_KEY not found in environment variables.")
+    st.info("Please set your GROQ_API_KEY in the deployment settings.")
+
+# Footer
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Footer
+st.markdown("---")
+st.markdown("""
+<div style="text-align: center; color: #666; padding: 20px;">
+    🍺 <strong>Nonny Beer AI Analytics Dashboard</strong> | 
+    Built with Streamlit & GROQ AI | 
+    <em>Showcasing AI Product Management Excellence</em>
+</div>
+""", unsafe_allow_html=True)
