@@ -346,7 +346,7 @@ if groq_available:
                             
                             # 设置90秒超时
                             signal.signal(signal.SIGALRM, timeout_handler)
-                            signal.alarm(90)  # 90秒超时
+                            signal.alarm(200)  # 200秒超时
                             
                             try:
                                 st.write("🔄 Using LangChain agent with code execution...")
@@ -355,7 +355,9 @@ if groq_available:
                                 llm = ChatGroq(
                                     groq_api_key=groq_api_key,
                                     model="llama3-8b-8192",
-                                    temperature=0.1
+                                    temperature=0,
+                                    max_tokens=3000,
+                                    request_timeout=200
                                 )
                                 
                                 # 创建带有详细指导的agent
@@ -386,9 +388,12 @@ Begin your analysis by examining the data and performing necessary calculations:
                                 agent = create_pandas_dataframe_agent(
                                     llm,
                                     df,
-                                    verbose=False,
+                                    verbose=True,
                                     handle_parsing_errors=True,
                                     allow_dangerous_code=True,
+                                    max_iterations=10,
+                                    early_stopping_method="generate",
+                                    agent_type="openai-tools"
                                     prefix=enhanced_prompt
                                 )
                                 
@@ -403,7 +408,7 @@ Begin your analysis by examining the data and performing necessary calculations:
                             except TimeoutError:
                                 # 超时后降级到普通GROQ
                                 signal.alarm(0)  # 清除超时
-                                st.warning("⏰ LangChain agent timed out (90s), falling back to standard GROQ analysis...")
+                                st.warning("⏰ LangChain agent timed out (200s), falling back to standard GROQ analysis...")
                                 raise Exception("LangChain timeout - falling back")
                                 
                             except Exception as e:
@@ -428,6 +433,7 @@ BEER - SALES DATA ANALYSIS:
 - Total Orders: {len(df):,}
 - Active Accounts: {df['Account Name'].nunique()}
 - Total Bottles Sold: {df['Total Bottles'].sum():,.0f}
+
 
 🍺 PRODUCT PERFORMANCE:
 {df.groupby('Product Line')['Sales'].sum().sort_values(ascending=False).to_string()}
