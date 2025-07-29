@@ -15,9 +15,19 @@ except ImportError:
     groq_available = False
     st.warning("GROQ not available. Please install: pip install groq")
 
+try:
+    from langchain_groq import ChatGroq
+    from langchain_experimental.agents.agent_toolkits.pandas.base import create_pandas_dataframe_agent
+    langchain_available = True
+except ImportError:
+    langchain_available = False
+    st.warning("⚠️ LangChain not installed. AI Assistant will have limited capabilities.")
+    st.info("For full AI code execution features, install: `pip install langchain-groq langchain-experimental`")
+    
+
 # Page setup
 st.set_page_config(
-    page_title="Nonny Beer AI Analytics", 
+    page_title="Beer AI Analytics", 
     layout="wide", 
     initial_sidebar_state="collapsed"
 )
@@ -119,7 +129,7 @@ def load_data_from_github():
 # Main header
 st.markdown("""
 <div class="main-header">
-    <h1>🍺 Nonny Beer AI Analytics Dashboard</h1>
+    <h1>🍺 Beer AI Analytics Dashboard</h1>
     <p>Intelligent Business Insights for Craft Brewery Operations</p>
 </div>
 """, unsafe_allow_html=True)
@@ -319,53 +329,83 @@ if groq_available:
         if (send_button and user_input) or any([message for message in st.session_state.chat_messages if message["role"] == "user" and message["content"] not in [msg["content"] for msg in st.session_state.chat_messages[:-1] if msg["role"] == "user"]]):
             
             # Get the latest user message
-            if send_button and user_input:
-                latest_question = user_input
-                st.session_state.chat_messages.append({"role": "user", "content": user_input})
-            else:
-                latest_question = st.session_state.chat_messages[-1]["content"]
-            
-            # Generate AI response
-            with st.spinner("🤔 Analyzing your data..."):
-                try:
-                    # Initialize GROQ client
-                    client = Groq(api_key=groq_api_key)
-                    
-                    # Prepare business context
-                    business_context = f"""
-NONNY BEER BREWERY - SALES DATA ANALYSIS
+           if send_button and user_input:
+    # Add user message
+    st.session_state.chat_messages.append({"role": "user", "content": user_input})
+    
+    # Generate response with code execution capability
+    with st.spinner("🤔 AI is analyzing data and running calculations..."):
+        try:
+            if langchain_available:
+                # 创建增强的LangChain agent
+                llm = ChatGroq(
+                    groq_api_key=groq_api_key,
+                    model="llama-3.1-70b-versatile",
+                    temperature=0.1
+                )
+                
+                # 创建带有详细指导的agent
+                enhanced_prompt = f"""
+You are an expert business analyst for Nonny Beer brewery with advanced data analysis capabilities.
 
-📊 BUSINESS OVERVIEW:
-• Total Sales: ${df['Sales'].sum():,.2f}
-• Total Orders: {len(df):,}
-• Active Accounts: {df['Account Name'].nunique()}
-• Total Bottles Sold: {df['Total Bottles'].sum():,.0f}
-• Date Range: {df['Date'].min()} to {df['Date'].max()}
+ANALYSIS FRAMEWORK:
+1. First, analyze the data patterns and identify key trends
+2. Consider multiple perspectives (financial, operational, strategic)  
+3. Compare performance across different dimensions (time, geography, products, channels)
+4. Identify correlations and potential causations in the data
+5. Provide specific, actionable recommendations with reasoning
+
+INSTRUCTIONS:
+- Perform step-by-step analysis before concluding
+- Use exact numbers and percentages from the data
+- Include growth rates, comparisons, and benchmarks where relevant
+- Identify opportunities and risks
+- Suggest specific action items with expected outcomes
+- Consider seasonal patterns and market dynamics
+- Be comprehensive yet concise
+
+USER QUESTION: {user_input}
+
+Begin your analysis by examining the data and performing necessary calculations:
+"""
+                
+                agent = create_pandas_dataframe_agent(
+                    llm,
+                    df,
+                    verbose=False,
+                    handle_parsing_errors=True,
+                    allow_dangerous_code=True,
+                    prefix=enhanced_prompt  # 将分析框架注入到agent中
+                )
+                
+                # 使用agent执行分析
+                result = agent.run(user_input)
+                response_text = result
+                
+            else:
+                # 降级为普通GROQ调用（保留原来的分析框架）
+                client = Groq(api_key=groq_api_key)
+                
+                business_context = f"""
+                
+BEER - SALES DATA ANALYSIS:
+- Total Sales: ${df['Sales'].sum():,.2f}
+- Total Orders: {len(df):,}
+- Active Accounts: {df['Account Name'].nunique()}
+- Total Bottles Sold: {df['Total Bottles'].sum():,.0f}
 
 🍺 PRODUCT PERFORMANCE:
 {df.groupby('Product Line')['Sales'].sum().sort_values(ascending=False).to_string()}
 
 🏪 SALES CHANNELS:
 {df.groupby('Sales Channel Name')['Sales'].sum().sort_values(ascending=False).to_string()}
-
-🌍 GEOGRAPHIC PERFORMANCE:
-{df.groupby('Province')['Sales'].sum().sort_values(ascending=False).to_string()}
-
-🏆 TOP ACCOUNTS:
-{df.groupby('Account Name')['Sales'].sum().sort_values(ascending=False).head(10).to_string()}
-
-📈 MONTHLY TRENDS:
-{df.groupby(['Year', 'Month'])['Sales'].sum().tail(12).to_string()}
 """
-                    
-                    # Create the AI prompt with enhanced analysis instructions
-                    prompt = f"""You are an advanced AI business analyst for Nonny Beer, a craft brewery. 
-
-TASK: Analyze the provided sales data and answer the customer's question with deep insights.
+                
+                prompt = f"""You are an advanced AI business analyst for a Beer Company.
 
 {business_context}
 
-CUSTOMER QUESTION: {latest_question}
+CUSTOMER QUESTION: {user_input}
 
 ANALYSIS FRAMEWORK:
 1. First, analyze the data patterns and identify key trends
@@ -384,46 +424,40 @@ INSTRUCTIONS:
 - Be comprehensive yet concise
 
 Begin your analysis:"""
-                    
-                    # Get AI response with dangerous=True for enhanced reasoning
-                    chat_completion = client.chat.completions.create(
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": "You are an expert business analyst with deep expertise in craft brewery operations, sales optimization, and data analysis. You have the ability to perform complex reasoning, draw insights from multiple data points, and provide strategic recommendations. Think step-by-step and show your analytical process."
-                            },
-                            {
-                                "role": "user", 
-                                "content": prompt
-                            }
-                        ],
-                        model="llama-3.1-70b-versatile",
-                        temperature=0.1,
-                        max_tokens=2000,
-                        dangerous=True  # Enable enhanced reasoning capabilities
-                    )
-                    
-                    response_text = chat_completion.choices[0].message.content
-                    
-                    # Add AI response to chat
-                    st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
-                    
-                    # Rerun to show new messages
-                    st.rerun()
-                    
-                except Exception as e:
-                    error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
-                    st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
-                    st.error(f"AI Error: {str(e)}")
-                    st.rerun()
-    else:
-        st.warning("🔑 GROQ_API_KEY not found in environment variables.")
-        st.info("Please set your GROQ_API_KEY in the deployment settings.")
+                
+                chat_completion = client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an expert business analyst with deep expertise in craft brewery operations, sales optimization, and data analysis. Think step-by-step and show your analytical process."
+                        },
+                        {
+                            "role": "user", 
+                            "content": prompt
+                        }
+                    ],
+                    model="llama-3.1-70b-versatile",
+                    temperature=0.1,
+                    max_tokens=2000
+                )
+                
+                response_text = chat_completion.choices[0].message.content
+            
+            # Add AI response
+            st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
+            st.rerun()
+            
+        except Exception as e:
+            error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
+            st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
+            st.error(f"AI Assistant Error: {str(e)}")
+            st.rerun()
 
 else:
-    st.warning("📦 GROQ library not available.")
-    st.code("pip install groq", language="bash")
+    st.warning("🔑 GROQ_API_KEY not found in environment variables.")
+    st.info("Please set your GROQ_API_KEY in the deployment settings.")
 
+# 保留Footer
 st.markdown('</div>', unsafe_allow_html=True)
 
 # Footer
