@@ -393,7 +393,7 @@ Begin your analysis by examining the data and performing necessary calculations:
                                     allow_dangerous_code=True,
                                     max_iterations=10,
                                     early_stopping_method="generate",
-                                    agent_type="openai-tools"
+                                    agent_type="openai-tools",
                                     prefix=enhanced_prompt
                                 )
                                 
