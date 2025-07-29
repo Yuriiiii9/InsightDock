@@ -440,18 +440,17 @@ Begin your analysis:"""
                             max_tokens=2000
                         )
 
-                try:
-                    response_text = chat_completion.choices[0].message.content
-                    
-                    # Add AI response
-                    st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
-                    st.rerun()
-                    
-                except Exception as e:
-                    error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
-                    st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
-                    st.error(f"AI Assistant Error: {str(e)}")
-                    st.rerun()
+                        response_text = chat_completion.choices[0].message.content
+                        
+                        # Add AI response
+                        st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
+                        st.rerun()
+                        
+                    except Exception as e:
+                        error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
+                        st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
+                        st.error(f"AI Assistant Error: {str(e)}")
+                        st.rerun()
     else:
         st.warning("🔑 GROQ_API_KEY not found in environment variables.")
         st.info("Please set your GROQ_API_KEY in the deployment settings.")
