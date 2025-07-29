@@ -427,47 +427,47 @@ INSTRUCTIONS:
 
 Begin your analysis:"""
                 
-                chat_completion = client.chat.completions.create(
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are an expert business analyst with deep expertise in craft brewery operations, sales optimization, and data analysis. Think step-by-step and show your analytical process."
-                        },
-                        {
-                            "role": "user", 
-                            "content": prompt
-                        }
-                    ],
-                    model="llama-3.1-70b-versatile",
-                    temperature=0.1,
-                    max_tokens=2000
-                )
+                                chat_completion = client.chat.completions.create(
+                                   messages=[
+                                        {
+                                            "role": "system",
+                                            "content": "You are an expert business analyst with deep expertise in craft brewery operations, sales optimization, and data analysis. Think step-by-step and show your analytical process."
+                                        },
+                                        {
+                                            "role": "user", 
+                                            "content": prompt
+                                        }
+                                    ],
+                                    model="llama-3.1-70b-versatile",
+                                    temperature=0.1,
+                                    max_tokens=2000
+                                )
+                                
+                                response_text = chat_completion.choices[0].message.content
+                            
+                            # Add AI response
+                            st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
+                            st.rerun()
+                            
+                        except Exception as e:
+                            error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
+                            st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
+                            st.error(f"AI Assistant Error: {str(e)}")
+                            st.rerun()
                 
-                response_text = chat_completion.choices[0].message.content
-            
-            # Add AI response
-            st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
-            st.rerun()
-            
-        except Exception as e:
-            error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
-            st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
-            st.error(f"AI Assistant Error: {str(e)}")
-            st.rerun()
-
-else:
-    st.warning("🔑 GROQ_API_KEY not found in environment variables.")
-    st.info("Please set your GROQ_API_KEY in the deployment settings.")
-
-# Footer
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Footer
-st.markdown("---")
-st.markdown("""
-<div style="text-align: center; color: #666; padding: 20px;">
-    🍺 <strong>Nonny Beer AI Analytics Dashboard</strong> | 
-    Built with Streamlit & GROQ AI | 
-    <em>Showcasing AI Product Management Excellence</em>
-</div>
-""", unsafe_allow_html=True)
+                else:
+                    st.warning("🔑 GROQ_API_KEY not found in environment variables.")
+                    st.info("Please set your GROQ_API_KEY in the deployment settings.")
+                
+                # Footer
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Footer
+                st.markdown("---")
+                st.markdown("""
+                <div style="text-align: center; color: #666; padding: 20px;">
+                    🍺 <strong>Nonny Beer AI Analytics Dashboard</strong> | 
+                    Built with Streamlit & GROQ AI | 
+                    <em>Showcasing AI Product Management Excellence</em>
+                </div>
+                """, unsafe_allow_html=True)
