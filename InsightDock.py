@@ -340,7 +340,7 @@ if groq_available:
                             # 创建增强的LangChain agent
                             llm = ChatGroq(
                                 groq_api_key=groq_api_key,
-                                model="llama-3.1-70b-versatile",
+                                model="llama3-8b-8192",
                                 temperature=0.1
                             )
                             
