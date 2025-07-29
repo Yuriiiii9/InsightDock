@@ -459,61 +459,61 @@ INSTRUCTIONS:
 - Be comprehensive yet concise
 
 Begin your analysis:"""
-                        
-                        chat_completion = client.chat.completions.create(
-                            messages=[
-                                {
-                                    "role": "system",
-                                    "content": "You are an expert business analyst with deep expertise in craft brewery operations, sales optimization, and data analysis. Think step-by-step and show your analytical process."
-                                },
-                                {
-                                    "role": "user", 
-                                    "content": prompt
-                                }
-                            ],
-                            model="llama3-8b-8192",
-                            temperature=0.1,
-                            max_tokens=2000
-                        )
-    
-                        response_text = chat_completion.choices[0].message.content
-                        st.success("✅ Standard GROQ analysis completed!")
-                    except Exception as final_error:
-                        error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
-                        st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
-                        st.error(f"AI Assistant Error: {str(e)}")
-                        st.error(f"❌ Exception caught: {str(e)}")
-                        st.session_state.chat_messages.append({
-                            "role": "assistant",
-                            "content": f"❌ Error: {str(e)}"
-                        })
-                        st.rerun()
-                        return
+                            try:
+                                chat_completion = client.chat.completions.create(
+                                    messages=[
+                                        {
+                                            "role": "system",
+                                            "content": "You are an expert business analyst with deep expertise in craft brewery operations, sales optimization, and data analysis. Think step-by-step and show your analytical process."
+                                        },
+                                        {
+                                            "role": "user", 
+                                            "content": prompt
+                                        }
+                                    ],
+                                    model="llama3-8b-8192",
+                                    temperature=0.1,
+                                    max_tokens=2000
+                                )
+            
+                                response_text = chat_completion.choices[0].message.content
+                                st.success("✅ Standard GROQ analysis completed!")
+                            except Exception as final_error:
+                                error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
+                                st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
+                                st.error(f"AI Assistant Error: {str(e)}")
+                                st.error(f"❌ Exception caught: {str(e)}")
+                                st.session_state.chat_messages.append({
+                                    "role": "assistant",
+                                    "content": f"❌ Error: {str(e)}"
+                                })
+                                st.rerun()
+                                return
 
-                    except Exception as e:
-                        # 保留你的详细错误处理
-                        error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
-                        st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
-                        st.error(f"AI Assistant Error: {str(e)}")
-                        st.error(f"❌ Exception caught: {str(e)}")
-                        st.session_state.chat_messages.append({
-                            "role": "assistant",
-                            "content": f"❌ Error: {str(e)}"
-                        })
-                        st.rerun()
-                        return  # 退出，不继续执行
+                        except Exception as e:
+                            # 保留你的详细错误处理
+                            error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
+                            st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
+                            st.error(f"AI Assistant Error: {str(e)}")
+                            st.error(f"❌ Exception caught: {str(e)}")
+                            st.session_state.chat_messages.append({
+                                "role": "assistant",
+                                "content": f"❌ Error: {str(e)}"
+                            })
+                            st.rerun()
+                            return  # 退出，不继续执行
         
                             
                     # Add AI response
-                if response_text:
-                    st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
-                    st.rerun()
-                else:
-                    # 如果没有响应文本，显示错误
-                    error_message = "❌ No response generated. Please try again."
-                    st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
-                    st.error("No response generated")
-                    st.rerun()
+                    if response_text:
+                        st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
+                        st.rerun()
+                    else:
+                        # 如果没有响应文本，显示错误
+                        error_message = "❌ No response generated. Please try again."
+                        st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
+                        st.error("No response generated")
+                        st.rerun()
                         
     else:
         st.warning("🔑 GROQ_API_KEY not found in environment variables.")
