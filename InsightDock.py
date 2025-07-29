@@ -388,84 +388,87 @@ if groq_available:
                                 client = Groq(api_key=groq_api_key)
                                 
                                 business_context = f"""
-                NONNY BEER BREWERY - SALES DATA ANALYSIS:
-                - Total Sales: ${df['Sales'].sum():,.2f}
-                - Total Orders: {len(df):,}
-                - Active Accounts: {df['Account Name'].nunique()}
-                - Total Bottles Sold: {df['Total Bottles'].sum():,.0f}
-                
-                🍺 PRODUCT PERFORMANCE:
-                {df.groupby('Product Line')['Sales'].sum().sort_values(ascending=False).to_string()}
-                
-                🏪 SALES CHANNELS:
-                {df.groupby('Sales Channel Name')['Sales'].sum().sort_values(ascending=False).to_string()}
-                """
+
                                 
-                                prompt = f"""You are an advanced AI business analyst for Nonny Beer brewery.
+BEER - SALES DATA ANALYSIS:
+- Total Sales: ${df['Sales'].sum():,.2f}
+- Total Orders: {len(df):,}
+- Active Accounts: {df['Account Name'].nunique()}
+- Total Bottles Sold: {df['Total Bottles'].sum():,.0f}
+
+🍺 PRODUCT PERFORMANCE:
+{df.groupby('Product Line')['Sales'].sum().sort_values(ascending=False).to_string()}
+
+🏪 SALES CHANNELS:
+{df.groupby('Sales Channel Name')['Sales'].sum().sort_values(ascending=False).to_string()}
+
+"""
                 
-                {business_context}
+                prompt = f"""You are an advanced AI business analyst for Nonny Beer brewery.
+
+{business_context}
+
+CUSTOMER QUESTION: {user_input}
+
+ANALYSIS FRAMEWORK:
+1. First, analyze the data patterns and identify key trends
+2. Consider multiple perspectives (financial, operational, strategic)
+3. Compare performance across different dimensions (time, geography, products, channels)
+4. Identify correlations and potential causations in the data
+5. Provide specific, actionable recommendations with reasoning
+
+INSTRUCTIONS:
+- Perform step-by-step analysis before concluding
+- Use exact numbers and percentages from the data
+- Include growth rates, comparisons, and benchmarks where relevant
+- Identify opportunities and risks
+- Suggest specific action items with expected outcomes
+- Consider seasonal patterns and market dynamics
+- Be comprehensive yet concise
+
+Begin your analysis:"""
                 
-                CUSTOMER QUESTION: {user_input}
+                chat_completion = client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an expert business analyst with deep expertise in craft brewery operations, sales optimization, and data analysis. Think step-by-step and show your analytical process."
+                        },
+                        {
+                            "role": "user", 
+                            "content": prompt
+                        }
+                    ],
+                    model="llama-3.1-70b-versatile",
+                    temperature=0.1,
+                    max_tokens=2000
+                )
                 
-                ANALYSIS FRAMEWORK:
-                1. First, analyze the data patterns and identify key trends
-                2. Consider multiple perspectives (financial, operational, strategic)
-                3. Compare performance across different dimensions (time, geography, products, channels)
-                4. Identify correlations and potential causations in the data
-                5. Provide specific, actionable recommendations with reasoning
-                
-                INSTRUCTIONS:
-                - Perform step-by-step analysis before concluding
-                - Use exact numbers and percentages from the data
-                - Include growth rates, comparisons, and benchmarks where relevant
-                - Identify opportunities and risks
-                - Suggest specific action items with expected outcomes
-                - Consider seasonal patterns and market dynamics
-                - Be comprehensive yet concise
-                
-                Begin your analysis:"""
-                                
-                                chat_completion = client.chat.completions.create(
-                                    messages=[
-                                        {
-                                            "role": "system",
-                                            "content": "You are an expert business analyst with deep expertise in craft brewery operations, sales optimization, and data analysis. Think step-by-step and show your analytical process."
-                                        },
-                                        {
-                                            "role": "user", 
-                                            "content": prompt
-                                        }
-                                    ],
-                                    model="llama-3.1-70b-versatile",
-                                    temperature=0.1,
-                                    max_tokens=2000
-                                )
-                                
-                                response_text = chat_completion.choices[0].message.content
-                            
-                            # Add AI response
-                            st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
-                            st.rerun()
-                            
-                        except Exception as e:
-                            error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
-                            st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
-                            st.error(f"AI Assistant Error: {str(e)}")
-                            st.rerun()
-                
-                else:
-                    st.warning("🔑 GROQ_API_KEY not found in environment variables.")
-                    st.info("Please set your GROQ_API_KEY in the deployment settings.")
-                
-                # 保留Footer
-                st.markdown('</div>', unsafe_allow_html=True)
-                
-                # Footer
-                st.markdown("---")
-                st.markdown("""
-                <div style="text-align: center; color: #666; padding: 20px;">
-                    🍺 <strong>Nonny Beer AI Analytics Dashboard</strong> | 
-                    Built with Streamlit & GROQ AI | 
-                    <em>Showcasing AI Product Management Excellence</em>
-                </div>
-                """, unsafe_allow_html=True)
+                response_text = chat_completion.choices[0].message.content
+            
+            # Add AI response
+            st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
+            st.rerun()
+            
+        except Exception as e:
+            error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
+            st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
+            st.error(f"AI Assistant Error: {str(e)}")
+            st.rerun()
+
+else:
+    st.warning("🔑 GROQ_API_KEY not found in environment variables.")
+    st.info("Please set your GROQ_API_KEY in the deployment settings.")
+
+# Footer
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Footer
+st.markdown("---")
+st.markdown("""
+<div style="text-align: center; color: #666; padding: 20px;">
+    🍺 <strong>Nonny Beer AI Analytics Dashboard</strong> | 
+    Built with Streamlit & GROQ AI | 
+    <em>Showcasing AI Product Management Excellence</em>
+</div>
+""", unsafe_allow_html=True)
