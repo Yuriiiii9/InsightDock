@@ -403,9 +403,8 @@ BEER - SALES DATA ANALYSIS:
 {df.groupby('Sales Channel Name')['Sales'].sum().sort_values(ascending=False).to_string()}
 
 """
-                
-                prompt = f"""You are an advanced AI business analyst for Nonny Beer brewery.
-
+                                enhanced_prompt = f"""You are an advanced AI business analyst for Nonny Beer brewery.
+                                
 {business_context}
 
 CUSTOMER QUESTION: {user_input}
