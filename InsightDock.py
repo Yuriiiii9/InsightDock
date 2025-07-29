@@ -329,176 +329,58 @@ if groq_available:
         if (send_button and user_input) or any([message for message in st.session_state.chat_messages if message["role"] == "user" and message["content"] not in [msg["content"] for msg in st.session_state.chat_messages[:-1] if msg["role"] == "user"]]):
             
             # Get the latest user message
-            if send_button and user_input:
-                # Add user message
-                st.session_state.chat_messages.append({"role": "user", "content": user_input})
-                
-                # Generate response with code execution capability
-                with st.spinner("🤔 AI is analyzing data and running calculations..."):
-                    response_text = None  
-                    
-                    if langchain_available:
-                        try:
-                            st.write("🔄 Using LangChain agent with code execution...")
-                            
-                            # 创建增强的LangChain agent
-                            llm = ChatGroq(
-                                groq_api_key=groq_api_key,
-                                model="llama3-8b-8192",
-                                temperature=0,
-                                max_tokens=3000,
-                                request_timeout=200
-                            )
-                            
-                            # 创建带有详细指导的agent
-                            enhanced_prompt = f"""
-You are an expert business analyst for Beer brewery with advanced data analysis capabilities.
-
-ANALYSIS FRAMEWORK:
-1. First, analyze the data patterns and identify key trends
-2. Consider multiple perspectives (financial, operational, strategic)  
-3. Compare performance across different dimensions (time, geography, products, channels)
-4. Identify correlations and potential causations in the data
-5. Provide specific, actionable recommendations with reasoning
-
-INSTRUCTIONS:
-- Perform step-by-step analysis before concluding
-- Use exact numbers and percentages from the data
-- Include growth rates, comparisons, and benchmarks where relevant
-- Identify opportunities and risks
-- Suggest specific action items with expected outcomes
-- Consider seasonal patterns and market dynamics
-- Be comprehensive yet concise
-
-USER QUESTION: {user_input}
-
-Begin your analysis by examining the data and performing necessary calculations:
-"""
-                            
-                            agent = create_pandas_dataframe_agent(
-                                llm,
-                                df,
-                                verbose=True,
-                                handle_parsing_errors=True,
-                                allow_dangerous_code=True,
-                                max_iterations=10,
-                                early_stopping_method="generate",
-                                agent_type="openai-tools",
-                                prefix=enhanced_prompt
-                            )
-                            
-                            # 使用agent执行分析
-                            result = agent.run(user_input)
-                            response_text = result  # 第一次赋值
-                            st.success("✅ LangChain analysis completed!")
-                        
-                            
-                        except TimeoutError:
-                            # 超时后降级到普通GROQ
-                            st.warning("⏰ LangChain agent timed out (200s), falling back to standard GROQ analysis...")
-                            st.warning(f"⚠️ LangChain failed: {str(e)[:100]}...")
-                            response_text = None  # 重置，准备fallback
-                            raise Exception("LangChain timeout - falling back")
-                            
-                        except Exception as e:
-                            # 其他错误也降级
-                            response_text = None
-                            if "timeout" not in str(e).lower():
-                                st.warning(f"⚠️ LangChain error: {str(e)[:100]}... Falling back to standard analysis...")
-                            raise Exception("LangChain failed - falling back")
-                    else:
-                        response_text = None
-                        raise Exception("LangChain not available - using fallback")
-                        
-                # 如果LangChain失败或不可用，使用标准GROQ
-                if response_text is None:  # 关键：检查是否需要fallback
-                    try:
-                        st.info("🔄 Using standard GROQ analysis...")
-                        client = Groq(api_key=groq_api_key)
-                        
-                        business_context = f"""
-BEER - SALES DATA ANALYSIS:
-- Total Sales: ${df['Sales'].sum():,.2f}
-- Total Orders: {len(df):,}
-- Active Accounts: {df['Account Name'].nunique()}
-- Total Bottles Sold: {df['Total Bottles'].sum():,.0f}
-
-
-🍺 PRODUCT PERFORMANCE:
-{df.groupby('Product Line')['Sales'].sum().sort_values(ascending=False).to_string()}
-
-🏪 SALES CHANNELS:
-{df.groupby('Sales Channel Name')['Sales'].sum().sort_values(ascending=False).to_string()}
-"""
-                            
-                        prompt = f"""You are an advanced AI business analyst for Beer brewery.
-
-{business_context}
-
-CUSTOMER QUESTION: {user_input}
-
-ANALYSIS FRAMEWORK:
-1. First, analyze the data patterns and identify key trends
-2. Consider multiple perspectives (financial, operational, strategic)
-3. Compare performance across different dimensions (time, geography, products, channels)
-4. Identify correlations and potential causations in the data
-5. Provide specific, actionable recommendations with reasoning
-
-INSTRUCTIONS:
-- Perform step-by-step analysis before concluding
-- Use exact numbers and percentages from the data
-- Include growth rates, comparisons, and benchmarks where relevant
-- Identify opportunities and risks
-- Suggest specific action items with expected outcomes
-- Consider seasonal patterns and market dynamics
-- Be comprehensive yet concise
-
-Begin your analysis:"""
-                        try:
-                            chat_completion = client.chat.completions.create(
-                                messages=[
-                                    {
-                                        "role": "system",
-                                        "content": "You are an expert business analyst with deep expertise in craft brewery operations, sales optimization, and data analysis. Think step-by-step and show your analytical process."
-                                    },
-                                    {
-                                        "role": "user", 
-                                        "content": prompt
-                                    }
-                                ],
-                                model="llama3-8b-8192",
-                                temperature=0.1,
-                                max_tokens=2000
-                            )
+            try:
+        st.info("🔄 Using LangChain with Python code execution...")
         
-                            response_text = chat_completion.choices[0].message.content
-                            st.success("✅ Standard GROQ analysis completed!")
-                        except Exception as final_error:
-                            response_text = f"❌ Sorry, analysis failed: {str(e)}"
-                            error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
-                            st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
-                            st.error(f"AI Assistant Error: {str(e)}")
-                            st.error(f"❌ Exception caught: {str(e)}")
-                            st.session_state.chat_messages.append({
-                                "role": "assistant",
-                                "content": f"❌ Error: {str(e)}"
-                            })
-                            st.rerun()
-                            st.stop()
+        llm = ChatGroq(
+            groq_api_key=groq_api_key, 
+            model="llama3-8b-8192", 
+            temperature=0.1,
+            max_tokens=2000
+        )
+        
+        # 更详细的提示
+        enhanced_question = f"""
+Please analyze the brewery sales data to answer: {user_input}
 
-                    except Exception as e:
-                        # 保留你的详细错误处理
-                        response_text = f"❌ Sorry, analysis failed: {str(e)}"
-                        error_message = f"❌ Error: {str(e)}\n\nPlease check your API key and try again."
-                        st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
-                        st.error(f"AI Assistant Error: {str(e)}")
-                        st.error(f"❌ Exception caught: {str(e)}")
-                        st.session_state.chat_messages.append({
-                            "role": "assistant",
-                            "content": f"❌ Error: {str(e)}"
-                        })
-                        st.rerun()
-                        st.stop()
+Steps:
+1. First examine the data structure 
+2. Perform calculations using pandas
+3. Provide specific insights with numbers
+4. Give actionable recommendations
+
+Make sure to show your analysis process and provide a clear final answer.
+"""
+        
+        agent = create_pandas_dataframe_agent(
+            llm, 
+            df, 
+            allow_dangerous_code=True,
+            verbose=True,
+            handle_parsing_errors=True,
+            max_iterations=3  # 限制迭代避免无限循环
+        )
+        
+        st.write("🤖 Agent is thinking and coding...")
+        result = agent.invoke({"input": enhanced_question})  # 使用invoke而不是run
+        
+        # 处理不同的返回格式
+        if isinstance(result, dict):
+            response_text = result.get('output', str(result))
+        else:
+            response_text = str(result)
+            
+        st.write(f"📝 Raw result: {response_text[:500]}...")  # 显示原始结果
+        
+        if response_text and response_text.strip():
+            st.success("✅ LangChain analysis completed!")
+        else:
+            st.warning("Empty result from LangChain")
+            response_text = None
+        
+    except Exception as e:
+        st.error(f"LangChain failed: {e}")
+        response_text = None
                         
     else:
         st.warning("🔑 GROQ_API_KEY not found in environment variables.")
