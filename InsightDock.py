@@ -340,16 +340,6 @@ if groq_available:
                     if langchain_available:
                         try:
                             st.write("🔄 Using LangChain agent with code execution...")
-                            # 尝试使用LangChain agent，带超时
-                            import signal
-                            import time
-                            
-                            def timeout_handler(signum, frame):
-                                raise TimeoutError("LangChain agent timed out")
-                            
-                            # 设置90秒超时
-                            signal.signal(signal.SIGALRM, timeout_handler)
-                            signal.alarm(200)  # 200秒超时
                             
                             # 创建增强的LangChain agent
                             llm = ChatGroq(
@@ -400,14 +390,11 @@ Begin your analysis by examining the data and performing necessary calculations:
                             # 使用agent执行分析
                             result = agent.run(user_input)
                             response_text = result  # 第一次赋值
-                            # 取消超时
-                            signal.alarm(0)
                             st.success("✅ LangChain analysis completed!")
                         
                             
                         except TimeoutError:
                             # 超时后降级到普通GROQ
-                            signal.alarm(0)  # 清除超时
                             st.warning("⏰ LangChain agent timed out (200s), falling back to standard GROQ analysis...")
                             st.warning(f"⚠️ LangChain failed: {str(e)[:100]}...")
                             response_text = None  # 重置，准备fallback
@@ -415,7 +402,6 @@ Begin your analysis by examining the data and performing necessary calculations:
                             
                         except Exception as e:
                             # 其他错误也降级
-                            signal.alarm(0)  # 清除超时
                             response_text = None
                             if "timeout" not in str(e).lower():
                                 st.warning(f"⚠️ LangChain error: {str(e)[:100]}... Falling back to standard analysis...")
